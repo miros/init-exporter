@@ -16,9 +16,12 @@ func InstallAndEnable(appName string, config Config, services []Service) {
 
 func Install(appName string, config Config, services []Service) {
   setServiceOptions(services, config)
+  installServices(appName, config, services)
 
-  writeAppUnit(appName, config)
+  writeAppUnit(appName, config, services)
+}
 
+func installServices(appName string, config Config, services []Service) {
   error := os.MkdirAll(config.HelperDir, 0755)
   if error != nil {
     panic(error)
@@ -31,14 +34,14 @@ func Install(appName string, config Config, services []Service) {
 
 func setServiceOptions(services []Service, config Config) {
   for i, _ := range services {
-    service := &services[i]
-    mergo.Merge(&service.Options, config)
+    defaults := ServiceOptions{User: config.User, Group: config.Group, WorkingDirectory: config.WorkingDirectory}
+    mergo.Merge(&services[i].Options, defaults)
   }
 }
 
-func writeAppUnit(appName string, config Config) {
+func writeAppUnit(appName string, config Config, services []Service) {
   path := config.unitPath(appName)
-  data := renderAppTemplate(appName, config)
+  data := renderAppTemplate(appName, config, services)
   writeFile(path, data)
 }
 

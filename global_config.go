@@ -7,19 +7,21 @@ import (
 )
 
 type GlobalConfig struct {
-    RunUser     string `yaml:"run_user"`
-    RunGroup    string `yaml:"run_group"`
-    HelperDir   string `yaml:"helper_dir"`
-    TargetDir   string `yaml:"target_dir"`
-    Prefix      string
+    RunUser           string `yaml:"run_user"`
+    RunGroup          string `yaml:"run_group"`
+    WorkingDirectory  string `yaml:"working_directory"`
+    HelperDir         string `yaml:"helper_dir"`
+    TargetDir         string `yaml:"target_dir"`
+    Prefix            string
 }
 
 func defaultConfig() GlobalConfig {
   return GlobalConfig{
     RunUser: "service",
     RunGroup: "service",
-    HelperDir: "/users/miros/systemd/var/local/upstart_helpers/",
-    TargetDir: "/users/miros/systemd/etc/systemd/system/",
+    WorkingDirectory: "/tmp",
+    HelperDir: "/var/local/upstart_helpers/",
+    TargetDir: "/etc/systemd/system/",
     Prefix: "fb-",
   }
 }

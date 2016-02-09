@@ -3,11 +3,12 @@ package systemd
 import (
   "text/template"
   "bytes"
+  "strings"
 )
 
 const helperTemplate = `#!/bin/bash
 [[ -r /etc/profile.d/rbenv.sh ]] && source /etc/profile.d/rbenv.sh
-{{.cmd}}
+exec {{.cmd}}
 `
 
 func renderHelperTemplate(cmd string) string {
@@ -20,26 +21,39 @@ func renderHelperTemplate(cmd string) string {
 const appTemplate = `[Unit]
 Description={{.app_name}}
 After=network.target
+Wants={{.wants}}
 
 [Service]
 Type=oneshot
 RemainAfterExit=true
 
-ExecStartPre=mkdir -p /var/log/{{.app_name}}
-ExecStartPre=chown -R {{.user}} /var/log/{{.app_name}}
-ExecStartPre=chgrp -R {{.group}} /var/log/{{.app_name}}
-ExecStartPre=chmod -R g+w /var/log/{{.app_name}}
+ExecStartPre=/bin/mkdir -p /var/log/{{.app_name}}
+ExecStartPre=/bin/chown -R {{.user}} /var/log/{{.app_name}}
+ExecStartPre=/bin/chgrp -R {{.group}} /var/log/{{.app_name}}
+ExecStartPre=/bin/chmod -R g+w /var/log/{{.app_name}}
+
+ExecStart=/bin/echo "{{.app_name}} started"
+ExecStop=/bin/echo "{{.app_name}} stoped"
 
 [Install]
 WantedBy=multi-user.target
 `
-func renderAppTemplate(appName string, config Config) string {
+func renderAppTemplate(appName string, config Config, services []Service) string {
   data := make(map[string]interface{})
   data["app_name"] = appName
   data["user"] = config.User
   data["group"] = config.Group
+  data["wants"] = renderWantsClause(appName, services)
 
   return renderTemplate("app", data)
+}
+
+func renderWantsClause(appName string, services []Service) string {
+  names := make([]string, 0, len(services))
+  for _, service := range(services) {
+    names = append(names, service.fullName(appName) + ".service")
+  }
+  return strings.Join(names, " ")
 }
 
 const serviceTemplate = `[Unit]
@@ -54,12 +68,15 @@ Restart=on-failure
 StartLimitInterval={{.respawn_interval}}
 StartLimitBurst={{.respawn_count}}
 
-ExecStartPre=touch /var/log/{{.app_name}}/{{.cmd_name}}.log
-ExecStartPre=chown {{.user}} /var/log/{{.app_name}}/{{.cmd_name}}.log
-ExecStartPre=chgrp {{.group}} /var/log/{{.app_name}}/{{.cmd_name}}.log
-ExecStartPre=mkdir chmod g+w /var/log/{{.app_name}}/{{.cmd_name}}.log
+ExecStartPre=/bin/touch /var/log/{{.app_name}}/{{.cmd_name}}.log
+ExecStartPre=/bin/chown {{.user}} /var/log/{{.app_name}}/{{.cmd_name}}.log
+ExecStartPre=/bin/chgrp {{.group}} /var/log/{{.app_name}}/{{.cmd_name}}.log
+ExecStartPre=/bin/chmod g+w /var/log/{{.app_name}}/{{.cmd_name}}.log
 
-ExecStart=exec sudo -u {{.user}} /bin/sh {{.helper_path}} >> /var/log/{{.app_name}}/{{.cmd_name}}.log 2>&1
+User={{.user}}
+WorkingDirectory={{.working_directory}}
+Environment={{.env}}
+ExecStart=/bin/sh {{.helper_path}} >> /var/log/{{.app_name}}/{{.cmd_name}}.log 2>&1
 `
 
 func renderServiceTemplate(appName string, service Service) string {
@@ -72,8 +89,18 @@ func renderServiceTemplate(appName string, service Service) string {
   data["user"] = service.Options.User
   data["group"] = service.Options.Group
   data["helper_path"] = service.helperPath
+  data["working_directory"] = service.Options.WorkingDirectory
+  data["env"] = renderEnvClause(service.Options.Env)
 
   return renderTemplate("service", data)
+}
+
+func renderEnvClause(env map[string]string) string {
+  clauses := make([]string, 0, len(env))
+  for name, value := range(env) {
+    clauses = append(clauses, name + "=" + value)
+  }
+  return strings.Join(clauses, " ")
 }
 
 func renderTemplate(Name string, data map[string]interface{}) string {

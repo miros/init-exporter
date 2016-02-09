@@ -5,6 +5,7 @@ import (
   "github.com/codegangsta/cli"
   "systemd-exporter/systemd"
   "systemd-exporter/procfile"
+  "fmt"
 )
 
 import "github.com/davecgh/go-spew/spew"
@@ -71,12 +72,13 @@ func newSystemdConfig(config GlobalConfig) systemd.Config {
     TargetDir: config.TargetDir,
     User: config.RunUser,
     Group: config.RunGroup,
+    WorkingDirectory: config.WorkingDirectory,
   }
 }
 
 func uninstall(appName string, config systemd.Config) {
   systemd.Uninstall(appName, config)
-  println("systemd service uninstalled")
+  fmt.Println("systemd service uninstalled")
 }
 
 func install(appName string, systemdConfig systemd.Config, pathToProcfile string) {
@@ -86,7 +88,7 @@ func install(appName string, systemdConfig systemd.Config, pathToProcfile string
 
   if services, err := procfile.ReadProcfile(pathToProcfile); err == nil {
     systemd.InstallAndEnable(appName, systemdConfig, services)
-    println("systemd service installed")
+    fmt.Println("systemd service installed to", systemdConfig.TargetDir)
   } else {
     panic(err)
   }

@@ -9,6 +9,7 @@ type Config struct {
   TargetDir string
   User string
   Group string
+  WorkingDirectory string
 }
 
 func (config *Config) unitPath(name string) string {

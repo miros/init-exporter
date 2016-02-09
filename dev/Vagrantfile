@@ -1,0 +1,29 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure(2) do |config|
+  config.vm.define "systemd-exporter-sandbox"
+
+  config.vm.box = "bento/centos-7.2"
+  config.vbguest.auto_update = true
+
+  config.vm.synced_folder "..", "/home/vagrant/src/systemd-exporter"
+
+  config.vm.provision "shell", inline: <<-SHELL
+    echo "nameserver 8.8.8.8" >> /etc/resolv.conf
+
+    curl -Ls http://funbox:godsexlovesecret@yum.fun-box.ru/preconf | bash
+    yum -y install tar patch wget git go
+
+    id -u service &> /dev/null || useradd service
+
+    mkdir -p /home/vagrant/src && chown vagrant:vagrant /home/vagrant/src
+    echo 'export GOPATH=$HOME' >> /home/vagrant/.bashrc
+    echo 'export PATH=$PATH:$GOPATH/bin' >> /home/vagrant/.bashrc
+  SHELL
+
+  config.vm.provider :virtualbox do |vb|
+    vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+  end
+
+end
