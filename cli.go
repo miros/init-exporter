@@ -4,6 +4,7 @@ import (
   "os"
   "github.com/codegangsta/cli"
   "systemd-exporter/systemd"
+  "systemd-exporter/procfile"
 )
 
 // import "github.com/davecgh/go-spew/spew"
@@ -72,7 +73,7 @@ func install(appName string, systemdConfig systemd.Config, pathToProcfile string
     panic("No procfile given")
   }
 
-  if services, err := ReadProcfile(pathToProcfile); err == nil {
+  if services, err := procfile.ReadProcfile(pathToProcfile); err == nil {
     systemd.InstallAndEnable(appName, systemdConfig, services)
     println("systemd service installed")
   } else {

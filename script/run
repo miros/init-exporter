@@ -1,1 +1,0 @@
-go build -o build/systemd-exporter && ./build/systemd-exporter $@

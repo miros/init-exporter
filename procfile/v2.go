@@ -1,82 +1,12 @@
-package main
+package procfile
 
 import (
   "systemd-exporter/systemd"
   "errors"
   "fmt"
-  "io/ioutil"
-  "regexp"
-  "bytes"
-  "bufio"
-  "strings"
   "github.com/imdario/mergo"
   "github.com/smallfish/simpleyaml"
 )
-
-import "github.com/davecgh/go-spew/spew"
-var _ = spew.Dump
-
-func ReadProcfile(path string) (services []systemd.Service, err error) {
-  data, err := ioutil.ReadFile(path)
-
-  if err != nil {
-    return
-  }
-
-  if isV2(data) {
-    services, err = parseProcfileV2(data)
-  } else {
-    services, err = parseProcfileV1(data)
-  }
-
-  return
-}
-
-func isV2(data []byte) bool {
-  re := regexp.MustCompile(`(?m)^version:\s*2\s*$`)
-  return re.Find(data) != nil
-}
-
-func parseProcfileV1(data []byte) (services []systemd.Service, err error) {
-  scanner := bufio.NewScanner(bytes.NewReader(data))
-
-  for scanner.Scan() {
-    line := strings.TrimSpace(scanner.Text())
-
-    switch {
-    case line == "":
-      // nop
-    case strings.HasPrefix(line, "#"):
-      // comment
-    default:
-      if service := parseV1Line(line); service != nil {
-        services = append(services, *service)
-      } else {
-        err = errors.New("procfile v1 should have format: 'some_label: command'")
-      }
-    }
-  }
-
-  if err := scanner.Err(); err != nil {
-    panic(err)
-  }
-
-  return
-}
-
-func parseV1Line(line string) *systemd.Service {
-  re := regexp.MustCompile(`^([A-z\d_]+):\s*(.+)`)
-  matches := re.FindStringSubmatch(line)
-
-  if len(matches) != 3 {
-    return nil
-  }
-
-  name := matches[1]
-  cmd := matches[2]
-
-  return &systemd.Service{Name: name, Cmd: cmd}
-}
 
 func parseProcfileV2(data []byte) (services []systemd.Service, err error) {
   // TODO this is too long: refactor
