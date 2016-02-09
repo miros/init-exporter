@@ -62,8 +62,9 @@ func runAction(cliContext *cli.Context) {
   }
 }
 
-func uninstall(appName string,config systemd.Config) {
+func uninstall(appName string, config systemd.Config) {
   systemd.Uninstall(appName, config)
+  println("systemd service uninstalled")
 }
 
 func install(appName string, systemdConfig systemd.Config, pathToProcfile string) {
@@ -72,7 +73,8 @@ func install(appName string, systemdConfig systemd.Config, pathToProcfile string
   }
 
   if services, err := ReadProcfile(pathToProcfile); err == nil {
-    systemd.Install(appName, systemdConfig, services)
+    systemd.InstallAndEnable(appName, systemdConfig, services)
+    println("systemd service installed")
   } else {
     panic(err)
   }

@@ -7,6 +7,12 @@ import (
 )
 
 import "github.com/davecgh/go-spew/spew"
+var _ = spew.Dump
+
+func InstallAndEnable(appName string, config Config, services []Service) {
+  Install(appName, config, services)
+  MustEnableService(appName)
+}
 
 func Install(appName string, config Config, services []Service) {
   setServiceOptions(services, config)
@@ -21,9 +27,6 @@ func Install(appName string, config Config, services []Service) {
   for _, service := range(services) {
     writeServiceUnit(appName, config, service)
   }
-
-  spew.Dump(services)
-  println("Exported to systemd")
 }
 
 func setServiceOptions(services []Service, config Config) {
