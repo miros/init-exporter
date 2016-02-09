@@ -24,3 +24,37 @@ type Service struct {
 func (service *Service) fullName(appName string) string {
   return appName + "_" + service.Name
 }
+
+func (service *Service) validate() error {
+  if err := validateNoSpecialSymbols(service.Name); err != nil {
+    return err
+  }
+
+  if err := service.Options.validate(); err != nil {
+    return err
+  }
+
+  return nil
+}
+
+func (options *ServiceOptions) validate() error {
+  if err := validatePath(options.WorkingDirectory); err != nil {
+    return err
+  }
+
+  if err := validateNoSpecialSymbols(options.User); err != nil {
+    return err
+  }
+
+  if err := validateNoSpecialSymbols(options.Group); err != nil {
+    return err
+  }
+
+  return nil
+}
+
+func validateServices(services []Service) {
+  for _, service := range(services) {
+    mustBeValid(&service)
+  }
+}

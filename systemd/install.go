@@ -15,10 +15,20 @@ func InstallAndEnable(appName string, config Config, services []Service) {
 }
 
 func Install(appName string, config Config, services []Service) {
-  setServiceOptions(services, config)
-  installServices(appName, config, services)
+  setServiceDefaults(services, config)
 
+  validateAppName(appName)
+  mustBeValid(&config)
+  validateServices(services)
+
+  installServices(appName, config, services)
   writeAppUnit(appName, config, services)
+}
+
+func validateAppName(appName string) {
+  if err := validateNoSpecialSymbols(appName); err != nil {
+    panic(err)
+  }
 }
 
 func installServices(appName string, config Config, services []Service) {
@@ -32,7 +42,7 @@ func installServices(appName string, config Config, services []Service) {
   }
 }
 
-func setServiceOptions(services []Service, config Config) {
+func setServiceDefaults(services []Service, config Config) {
   for i, _ := range services {
     defaults := ServiceOptions{User: config.User, Group: config.Group, WorkingDirectory: config.WorkingDirectory}
     mergo.Merge(&services[i].Options, defaults)

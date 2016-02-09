@@ -9,15 +9,10 @@ import (
 )
 
 func parseProcfileV2(data []byte) (services []systemd.Service, err error) {
-  // TODO this is too long: refactor
-
   yaml, err := simpleyaml.NewYaml(data)
-
   if err != nil {
     return
   }
-
-  commonOptions := getServiceOptions(yaml)
 
   commands, err := yaml.Get("commands").Map()
   if (err != nil) {
@@ -25,10 +20,18 @@ func parseProcfileV2(data []byte) (services []systemd.Service, err error) {
     return
   }
 
+  services = parseCommands(yaml, commands)
+
+  return services, nil
+}
+
+func parseCommands(yaml *simpleyaml.Yaml, commands map[interface{}]interface{}) []systemd.Service {
+  commonOptions := getServiceOptions(yaml)
+  services := make([]systemd.Service, 0, len(commands))
+
   for key, _ := range(commands) {
     name := toString(key)
     commandYaml := yaml.GetPath("commands", name)
-
     cmd, _ := commandYaml.Get("command").String()
 
     service := systemd.Service{
@@ -41,43 +44,40 @@ func parseProcfileV2(data []byte) (services []systemd.Service, err error) {
     services = append(services, service)
   }
 
-  return services, nil
+  return services
 }
 
 func getServiceOptions(yaml *simpleyaml.Yaml) systemd.ServiceOptions {
-
   options := systemd.ServiceOptions{}
 
-  if value := yaml.Get("working_directory"); isPresent(value) {
-    options.WorkingDirectory, _ = value.String()
-  }
+  options.WorkingDirectory, _ = yaml.Get("working_directory").String()
+  options.User, _ = yaml.Get("user").String()
+  options.Group, _ = yaml.Get("group").String()
+  options.KillTimeout = mustGetInt(yaml, "kill_timeout")
 
-  if value := yaml.Get("user"); isPresent(value) {
-    options.User, _ = value.String()
-  }
-
-  if value := yaml.Get("group"); isPresent(value) {
-    options.Group, _ = value.String()
-  }
-
-  if value := yaml.Get("kill_timeout"); isPresent(value) {
-    options.KillTimeout, _ = value.Int()
-  }
-
-  if value := yaml.Get("env"); isPresent(value) {
-    if envMap, err := value.Map(); err == nil {
-      options.Env = toStringMap(envMap)
-    }
+  if value, err := yaml.Get("env").Map(); err == nil {
+    options.Env = toStringMap(value)
   }
 
   if value := yaml.Get("respawn"); isPresent(value) {
-    count, _ := value.Get("count").Int()
-    interval, _ := value.Get("interval").Int()
-
+    count := mustGetInt(value, "count")
+    interval := mustGetInt(value, "interval")
     options.Respawn = systemd.Respawn{Count: count, Interval: interval}
   }
 
   return options
+}
+
+func mustGetInt(yaml *simpleyaml.Yaml, key string) int {
+  if rawVal := yaml.Get(key); isPresent(rawVal) {
+    if val, err := rawVal.Int(); err != nil {
+      panic(fmt.Sprintf("%s is not integer", key))
+    } else {
+      return val
+    }
+  }
+
+  return 0
 }
 
 func isPresent(yaml *simpleyaml.Yaml) bool {
