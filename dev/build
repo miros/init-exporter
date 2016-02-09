@@ -1,0 +1,2 @@
+EXE_TARGET=dev/target/systemd-exporter
+go build -o $EXE_TARGET
