@@ -4,13 +4,15 @@ import (
   "systemd-exporter/systemd/validation"
   "github.com/imdario/mergo"
   "github.com/spf13/afero"
+  "fmt"
 )
 
 import "github.com/davecgh/go-spew/spew"
 var _ = spew.Dump
 
 func (sys *Systemd) Install(appName string, services []Service) {
-  setServiceDefaults(services, sys.Config)
+  services = handleServiceCounts(services)
+  setServiceDefaults(appName, services, sys.Config)
   validateParams(appName, sys.Config, services)
   sys.doInstall(appName, services)
 }
@@ -37,10 +39,35 @@ func validateConfig(config Config) {
   validation.MustBeValid(&config)
 }
 
-func setServiceDefaults(services []Service, config Config) {
+func handleServiceCounts(services []Service) []Service {
+  newServices := make([]Service, 0, len(services))
+
+  for _, service := range services {
+    if count := service.Options.Count; count > 1 {
+      for i := 1; i <= count; i++ {
+        newService := service
+        newService.Name = fmt.Sprintf("%s%d", service.Name, i)
+        newServices = append(newServices, newService)
+      }
+    } else {
+        newServices = append(newServices, service)
+    }
+  }
+
+  return newServices
+}
+
+func setServiceDefaults(appName string, services []Service, config Config) {
   for i, _ := range services {
-    defaults := ServiceOptions{User: config.User, Group: config.Group, WorkingDirectory: config.DefaultWorkingDirectory}
-    mergo.Merge(&services[i].Options, defaults)
+    service := &services[i]
+
+    defaults := ServiceOptions{
+      User: config.User,
+      Group: config.Group,
+      WorkingDirectory: config.DefaultWorkingDirectory,
+      LogPath: fmt.Sprintf("/var/log/%s/%s.log", appName, service.Name),
+    }
+    mergo.Merge(&service.Options, defaults)
   }
 }
 

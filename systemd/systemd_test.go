@@ -7,6 +7,9 @@ import (
   "strings"
 )
 
+import "github.com/davecgh/go-spew/spew"
+var _ = spew.Dump
+
 type testEnv struct {
   executedCommands []string
   fs afero.Fs
@@ -59,18 +62,16 @@ var systemdConfig Config = Config{
   DefaultWorkingDirectory: "/tmp",
 }
 
-var services []Service = []Service{
-  Service{
-    Name: "some-service",
-    Cmd: "run",
-    Options: ServiceOptions{
-      WorkingDirectory: "/projects/some-service",
-      User: "run_user",
-      Group: "run_group",
-      KillTimeout: 12345,
-      Respawn: Respawn{Interval: 10, Count: 100},
-      Env: map[string]string{"env_var": "env_val", "env_var2": "env_val2"},
-    },
+var defaultService = Service{
+  Name: "some-service",
+  Cmd: "run-some-service",
+  Options: ServiceOptions{
+    WorkingDirectory: "/projects/some-service",
+    User: "run_user",
+    Group: "run_group",
+    KillTimeout: 12345,
+    Respawn: Respawn{Interval: 10, Count: 100},
+    Env: map[string]string{"env_var": "env_val", "env_var2": "env_val2"},
   },
 }
 
@@ -82,13 +83,13 @@ func TestInstall(t *testing.T) {
   env := newTestEnv()
   sys := env.newSystemd(systemdConfig)
 
-  sys.Install("some-app", services)
+  sys.Install("some-app", []Service{defaultService})
 
   assert.True(t, env.fileExists(appUnitFilePath), "no app unit file")
 
   assert.True(t, env.fileExists(helperFilePath), "no helper file")
   helperFileData := env.readFile(helperFilePath)
-  assert.Contains(t, helperFileData, "run")
+  assert.Contains(t, helperFileData, "run-some-service")
 
   assert.True(t, env.fileExists(serviceUnitFilePath), "no service unit file")
   unitFileData := env.readFile(serviceUnitFilePath)
@@ -102,15 +103,29 @@ func TestInstall(t *testing.T) {
   assert.Contains(t, unitFileData, "WorkingDirectory=/projects/some-service")
   assert.Contains(t, unitFileData, "env_var=env_val")
   assert.Contains(t, unitFileData, "env_var2=env_val2")
+  assert.Contains(t, unitFileData, ">> /var/log/some-app/some-service.log")
 
   assert.Contains(t, env.executedCommands, "systemctl enable some-app.service")
+}
+
+func TestInstallMultiCount(t *testing.T) {
+  env := newTestEnv()
+  sys := env.newSystemd(systemdConfig)
+
+  multiService := defaultService
+  multiService.Options.Count = 2
+
+  sys.Install("some-app", []Service{multiService})
+
+  assert.True(t, env.fileExists("/units/some-app_some-service1.service"), "no service unit file")
+  assert.True(t, env.fileExists("/units/some-app_some-service2.service"), "no service unit file")
 }
 
 func TestUnInstall(t *testing.T) {
   env := newTestEnv()
   sys := env.newSystemd(systemdConfig)
 
-  sys.Install("some-app", services)
+  sys.Install("some-app", []Service{defaultService})
 
   env.writeFile("/helpers/file_to_keep.sh", "data")
   env.writeFile("/units/file_to_keep.service", "data")

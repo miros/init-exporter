@@ -16,6 +16,8 @@ type ServiceOptions struct {
   Group string
   KillTimeout int
   Respawn Respawn
+  LogPath string
+  Count int
 }
 
 func (options *ServiceOptions) Validate() error {
@@ -28,6 +30,10 @@ func (options *ServiceOptions) Validate() error {
   }
 
   if err := validation.NoSpecialSymbols(options.Group); err != nil {
+    return err
+  }
+
+  if err := validation.Path(options.LogPath); err != nil {
     return err
   }
 

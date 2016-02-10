@@ -54,6 +54,8 @@ func getServiceOptions(yaml *simpleyaml.Yaml) systemd.ServiceOptions {
   options.User, _ = yaml.Get("user").String()
   options.Group, _ = yaml.Get("group").String()
   options.KillTimeout = mustGetInt(yaml, "kill_timeout")
+  options.LogPath, _ = yaml.Get("log").String()
+  options.Count = mustGetInt(yaml, "count")
 
   if value, err := yaml.Get("env").Map(); err == nil {
     options.Env = toStringMap(value)

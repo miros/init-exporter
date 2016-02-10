@@ -19,5 +19,8 @@ func TestServiceValidations(t *testing.T) {
 
   service = Service{Options: ServiceOptions{WorkingDirectory: "!wrong!"}}
   assert.Error(t, service.Validate())
+
+  service = Service{Options: ServiceOptions{LogPath: "!wrong!"}}
+  assert.Error(t, service.Validate())
 }
 

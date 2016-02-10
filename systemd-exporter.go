@@ -15,10 +15,22 @@ const version = "0.0.1"
 const defaultConfigPath = "/etc/systemd-exporter.yaml"
 
 func main() {
+  defer prettyPrintPanics()
+
   app := cli.NewApp()
   describeApp(app, version)
   app.Action = runAction
   app.Run(os.Args)
+}
+
+func prettyPrintPanics() {
+  if (os.Getenv("DEBUG") == "true") {
+    return
+  }
+
+  if r := recover(); r != nil {
+    fmt.Fprintf(os.Stderr, "Error: %v\n", r)
+  }
 }
 
 func describeApp(app *cli.App, version string) {

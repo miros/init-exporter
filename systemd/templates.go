@@ -68,16 +68,16 @@ Restart=on-failure
 StartLimitInterval={{.respawn_interval}}
 StartLimitBurst={{.respawn_count}}
 
-ExecStartPre=/bin/touch /var/log/{{.app_name}}/{{.cmd_name}}.log
-ExecStartPre=/bin/chown {{.user}} /var/log/{{.app_name}}/{{.cmd_name}}.log
-ExecStartPre=/bin/chgrp {{.group}} /var/log/{{.app_name}}/{{.cmd_name}}.log
-ExecStartPre=/bin/chmod g+w /var/log/{{.app_name}}/{{.cmd_name}}.log
+ExecStartPre=/bin/touch {{.log_path}}
+ExecStartPre=/bin/chown {{.user}} {{.log_path}}
+ExecStartPre=/bin/chgrp {{.group}} {{.log_path}}
+ExecStartPre=/bin/chmod g+w {{.log_path}}
 
 User={{.user}}
 Group={{.group}}
 WorkingDirectory={{.working_directory}}
 Environment={{.env}}
-ExecStart=/bin/sh {{.helper_path}} >> /var/log/{{.app_name}}/{{.cmd_name}}.log 2>&1
+ExecStart=/bin/sh {{.helper_path}} >> {{.log_path}} 2>&1
 `
 
 func RenderServiceTemplate(appName string, service Service) string {
@@ -91,6 +91,7 @@ func RenderServiceTemplate(appName string, service Service) string {
   data["group"] = service.Options.Group
   data["helper_path"] = service.helperPath
   data["working_directory"] = service.Options.WorkingDirectory
+  data["log_path"] = service.Options.LogPath
   data["env"] = renderEnvClause(service.Options.Env)
 
   return renderTemplate("service", data)
