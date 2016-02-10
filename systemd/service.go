@@ -5,8 +5,8 @@ import (
 )
 
 type Respawn struct {
-  Count int
   Interval int
+  Count int
 }
 
 type ServiceOptions struct {

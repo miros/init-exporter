@@ -74,6 +74,7 @@ ExecStartPre=/bin/chgrp {{.group}} /var/log/{{.app_name}}/{{.cmd_name}}.log
 ExecStartPre=/bin/chmod g+w /var/log/{{.app_name}}/{{.cmd_name}}.log
 
 User={{.user}}
+Group={{.group}}
 WorkingDirectory={{.working_directory}}
 Environment={{.env}}
 ExecStart=/bin/sh {{.helper_path}} >> /var/log/{{.app_name}}/{{.cmd_name}}.log 2>&1
