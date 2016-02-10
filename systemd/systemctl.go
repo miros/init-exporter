@@ -1,23 +1,19 @@
 package systemd
 
-import (
-  "os/exec"
-)
-
-func EnableService(appName string) error {
-  return exec.Command("systemctl", "enable", serviceName(appName)).Run();
+func (sys *Systemd) EnableService(appName string) error {
+  return sys.execSystemCommand("systemctl", "enable", serviceName(appName));
 }
 
-func MustEnableService(appName string) {
-  must(EnableService(appName))
+func (sys *Systemd) MustEnableService(appName string) {
+  must(sys.EnableService(appName))
 }
 
-func DisableService(appName string) error {
-  return exec.Command("systemctl", "disable", serviceName(appName)).Run();
+func (sys *Systemd) DisableService(appName string) error {
+  return sys.execSystemCommand("systemctl", "disable", serviceName(appName));
 }
 
-func MustDisableService(appName string) {
-  must(DisableService(appName))
+func (sys *Systemd) MustDisableService(appName string) {
+  must(sys.DisableService(appName))
 }
 
 func serviceName(name string) string {
@@ -29,3 +25,4 @@ func must(err error) {
     panic(err)
   }
 }
+

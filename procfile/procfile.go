@@ -1,9 +1,9 @@
 package procfile
 
 import (
-  "systemd-exporter/systemd"
   "io/ioutil"
   "regexp"
+  "systemd-exporter/systemd"
 )
 
 import "github.com/davecgh/go-spew/spew"

@@ -2,6 +2,7 @@ package systemd
 
 import (
   "path"
+  "systemd-exporter/systemd/validation"
 )
 
 type Config struct {
@@ -9,7 +10,7 @@ type Config struct {
   TargetDir string
   User string
   Group string
-  WorkingDirectory string
+  DefaultWorkingDirectory string
 }
 
 func (config *Config) unitPath(name string) string {
@@ -20,19 +21,18 @@ func (config *Config) helperPath(name string) string {
   return path.Join(config.HelperDir, name + ".sh")
 }
 
-func (config *Config) validate() error {
-  if err := validateNoSpecialSymbols(config.User); err != nil {
+func (config *Config) Validate() error {
+  if err := validation.NoSpecialSymbols(config.User); err != nil {
     return err
   }
 
-  if err := validateNoSpecialSymbols(config.Group); err != nil {
+  if err := validation.NoSpecialSymbols(config.Group); err != nil {
     return err
   }
 
-  if err := validatePath(config.WorkingDirectory); err != nil {
+  if err := validation.Path(config.DefaultWorkingDirectory); err != nil {
     return err
   }
 
   return nil
 }
-

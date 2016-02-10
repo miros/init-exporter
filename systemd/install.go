@@ -1,73 +1,85 @@
 package systemd
 
 import (
-  "io/ioutil"
-  "os"
+  "systemd-exporter/systemd/validation"
   "github.com/imdario/mergo"
+  "github.com/spf13/afero"
 )
 
 import "github.com/davecgh/go-spew/spew"
 var _ = spew.Dump
 
-func InstallAndEnable(appName string, config Config, services []Service) {
-  Install(appName, config, services)
-  MustEnableService(appName)
+func (sys *Systemd) Install(appName string, services []Service) {
+  setServiceDefaults(services, sys.Config)
+  validateParams(appName, sys.Config, services)
+  sys.doInstall(appName, services)
 }
 
-func Install(appName string, config Config, services []Service) {
-  setServiceDefaults(services, config)
+func (sys *Systemd) doInstall(appName string, services []Service) {
+  sys.installServices(appName, services)
+  sys.writeAppUnit(appName, services)
+  sys.MustEnableService(appName)
+}
 
+func validateParams(appName string, config Config, services []Service) {
   validateAppName(appName)
-  mustBeValid(&config)
+  validateConfig(config)
   validateServices(services)
-
-  installServices(appName, config, services)
-  writeAppUnit(appName, config, services)
 }
 
 func validateAppName(appName string) {
-  if err := validateNoSpecialSymbols(appName); err != nil {
+  if err := validation.NoSpecialSymbols(appName); err != nil {
     panic(err)
   }
 }
 
-func installServices(appName string, config Config, services []Service) {
-  error := os.MkdirAll(config.HelperDir, 0755)
+func validateConfig(config Config) {
+  validation.MustBeValid(&config)
+}
+
+func setServiceDefaults(services []Service, config Config) {
+  for i, _ := range services {
+    defaults := ServiceOptions{User: config.User, Group: config.Group, WorkingDirectory: config.DefaultWorkingDirectory}
+    mergo.Merge(&services[i].Options, defaults)
+  }
+}
+
+func validateServices(services []Service) {
+  for _, service := range(services) {
+    validation.MustBeValid(&service)
+  }
+}
+
+func (sys *Systemd) installServices(appName string, services []Service) {
+  error := sys.fs.MkdirAll(sys.Config.HelperDir, 0755)
   if error != nil {
     panic(error)
   }
 
   for _, service := range(services) {
-    writeServiceUnit(appName, config, service)
+    sys.writeServiceUnit(appName, service)
   }
 }
 
-func setServiceDefaults(services []Service, config Config) {
-  for i, _ := range services {
-    defaults := ServiceOptions{User: config.User, Group: config.Group, WorkingDirectory: config.WorkingDirectory}
-    mergo.Merge(&services[i].Options, defaults)
-  }
+func (sys *Systemd) writeAppUnit(appName string, services []Service) {
+  path := sys.Config.unitPath(appName)
+  data := RenderAppTemplate(appName, sys.Config, services)
+  writeFile(sys.fs, path, data)
 }
 
-func writeAppUnit(appName string, config Config, services []Service) {
-  path := config.unitPath(appName)
-  data := renderAppTemplate(appName, config, services)
-  writeFile(path, data)
-}
-
-func writeServiceUnit(appName string, config Config, service Service) {
+func (sys *Systemd) writeServiceUnit(appName string, service Service) {
   fullServiceName := service.fullName(appName)
 
-  service.helperPath = config.helperPath(fullServiceName)
-  helperData := renderHelperTemplate(service.Cmd)
-  writeFile(service.helperPath, helperData)
+  service.helperPath = sys.Config.helperPath(fullServiceName)
+  helperData := RenderHelperTemplate(service.Cmd)
+  writeFile(sys.fs, service.helperPath, helperData)
 
-  unitPath := config.unitPath(fullServiceName)
-  writeFile(unitPath, renderServiceTemplate(appName, service))
+  unitPath := sys.Config.unitPath(fullServiceName)
+  writeFile(sys.fs, unitPath, RenderServiceTemplate(appName, service))
 }
 
-func writeFile(path string, data string) {
-  error := ioutil.WriteFile(path, []byte(data), 0644)
+func writeFile(fs afero.Fs, path string, data string) {
+  error := afero.WriteFile(fs, path, []byte(data), 0644)
   if error != nil {
     panic(error)
   }

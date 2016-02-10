@@ -11,7 +11,7 @@ const helperTemplate = `#!/bin/bash
 exec {{.cmd}}
 `
 
-func renderHelperTemplate(cmd string) string {
+func RenderHelperTemplate(cmd string) string {
   data := make(map[string]interface{})
   data["cmd"] = cmd
 
@@ -38,7 +38,7 @@ ExecStop=/bin/echo "{{.app_name}} stoped"
 [Install]
 WantedBy=multi-user.target
 `
-func renderAppTemplate(appName string, config Config, services []Service) string {
+func RenderAppTemplate(appName string, config Config, services []Service) string {
   data := make(map[string]interface{})
   data["app_name"] = appName
   data["user"] = config.User
@@ -79,7 +79,7 @@ Environment={{.env}}
 ExecStart=/bin/sh {{.helper_path}} >> /var/log/{{.app_name}}/{{.cmd_name}}.log 2>&1
 `
 
-func renderServiceTemplate(appName string, service Service) string {
+func RenderServiceTemplate(appName string, service Service) string {
   data := make(map[string]interface{})
   data["app_name"] = appName
   data["cmd_name"] = service.Name

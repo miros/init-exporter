@@ -1,4 +1,4 @@
-package systemd
+package validation
 
 import (
   "regexp"
@@ -6,21 +6,21 @@ import (
   "errors"
 )
 
-type validatable interface {
-    validate() error
+type Validatable interface {
+    Validate() error
 }
 
-func mustBeValid(item validatable) {
-  if err := item.validate(); err != nil {
+func MustBeValid(item Validatable) {
+  if err := item.Validate(); err != nil {
     panic(err)
   }
 }
 
-func validatePath(val string) error {
+func Path(val string) error {
   return validateString(val, `\A[A-Za-z0-9_\-./]+\z`)
 }
 
-func validateNoSpecialSymbols(val string) error {
+func NoSpecialSymbols(val string) error {
   return validateString(val, `\A[A-Za-z0-9_\-]+\z`)
 }
 

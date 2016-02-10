@@ -57,38 +57,40 @@ func runAction(cliContext *cli.Context) {
 
   globalConfig := ReadGlobalConfig(cliContext.String("config"))
   appName = globalConfig.Prefix + appName;
-  systemdConfig := newSystemdConfig(globalConfig)
+  systemd := newSystemd(globalConfig)
 
   if cliContext.Bool("uninstall") {
-    uninstall(appName, systemdConfig)
+    uninstall(systemd, appName)
   } else {
-    install(appName, systemdConfig, cliContext.String("procfile"))
+    install(systemd, appName, cliContext.String("procfile"))
   }
 }
 
-func newSystemdConfig(config GlobalConfig) systemd.Config {
-  return systemd.Config{
+func newSystemd(config GlobalConfig) *systemd.Systemd {
+  systemdConfig := systemd.Config{
     HelperDir: config.HelperDir,
     TargetDir: config.TargetDir,
     User: config.RunUser,
     Group: config.RunGroup,
-    WorkingDirectory: config.WorkingDirectory,
+    DefaultWorkingDirectory: config.WorkingDirectory,
   }
+
+  return systemd.New(systemdConfig)
 }
 
-func uninstall(appName string, config systemd.Config) {
-  systemd.Uninstall(appName, config)
+func uninstall(systemd *systemd.Systemd, appName string) {
+  systemd.Uninstall(appName)
   fmt.Println("systemd service uninstalled")
 }
 
-func install(appName string, systemdConfig systemd.Config, pathToProcfile string) {
+func install(systemd *systemd.Systemd, appName string, pathToProcfile string) {
   if (pathToProcfile == "") {
     panic("No procfile given")
   }
 
   if services, err := procfile.ReadProcfile(pathToProcfile); err == nil {
-    systemd.InstallAndEnable(appName, systemdConfig, services)
-    fmt.Println("systemd service installed to", systemdConfig.TargetDir)
+    systemd.Install(appName, services)
+    fmt.Println("systemd service installed to", systemd.Config.TargetDir)
   } else {
     panic(err)
   }

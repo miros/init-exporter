@@ -1,36 +1,30 @@
 package systemd
 
-import (
-  "path/filepath"
-  "os"
-)
-
-func Uninstall(appName string, config Config) {
-  uninstallHelpers(appName, config)
-  uninstallUnits(appName, config)
-
-  DisableService(appName)
+func (sys *Systemd) Uninstall(appName string) {
+  sys.uninstallHelpers(appName)
+  sys.uninstallUnits(appName)
+  sys.DisableService(appName)
 }
 
-func uninstallUnits(appName string, config Config) {
-  pattern := config.unitPath(appMask(appName))
-  deleteByMask(pattern)
+func (sys *Systemd) uninstallUnits(appName string) {
+  pattern := sys.Config.unitPath(appMask(appName))
+  sys.deleteByMask(pattern)
 }
 
-func uninstallHelpers(appName string, config Config) {
-  pattern := config.helperPath(appMask(appName))
-  deleteByMask(pattern)
+func (sys *Systemd) uninstallHelpers(appName string) {
+  pattern := sys.Config.helperPath(appMask(appName))
+  sys.deleteByMask(pattern)
 
-  deleteByMask(config.unitPath(appName))
+  sys.deleteByMask(sys.Config.unitPath(appName))
 }
 
 func appMask(appName string) string {
   return appName + "_*"
 }
 
-func deleteByMask(pattern string) {
-  for _, path := range mustGlob(pattern) {
-    err := os.Remove(path)
+func (sys *Systemd) deleteByMask(pattern string) {
+  for _, path := range sys.mustGlob(pattern) {
+    err := sys.fs.Remove(path)
 
     if (err != nil) {
       panic(err)
@@ -38,8 +32,8 @@ func deleteByMask(pattern string) {
   }
 }
 
-func mustGlob(pattern string) []string {
-  matches, err := filepath.Glob(pattern)
+func (sys *Systemd) mustGlob(pattern string) []string {
+  matches, err := sys.globFilepath(pattern)
 
   if (err != nil) {
     panic(err)
@@ -47,3 +41,4 @@ func mustGlob(pattern string) []string {
 
   return matches
 }
+
