@@ -69,6 +69,7 @@ var services []Service = []Service{
       Group: "run_group",
       KillTimeout: 12345,
       Respawn: Respawn{Interval: 10, Count: 100},
+      Env: map[string]string{"env_var": "env_val", "env_var2": "env_val2"},
     },
   },
 }
@@ -99,6 +100,8 @@ func TestInstall(t *testing.T) {
   assert.Contains(t, unitFileData, "User=run_user")
   assert.Contains(t, unitFileData, "Group=run_group")
   assert.Contains(t, unitFileData, "WorkingDirectory=/projects/some-service")
+  assert.Contains(t, unitFileData, "env_var=env_val")
+  assert.Contains(t, unitFileData, "env_var2=env_val2")
 
   assert.Contains(t, env.executedCommands, "systemctl enable some-app.service")
 }

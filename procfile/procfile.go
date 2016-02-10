@@ -16,6 +16,10 @@ func ReadProcfile(path string) (services []systemd.Service, err error) {
     return
   }
 
+  return parseProcfile(data)
+}
+
+func parseProcfile(data []byte) (services []systemd.Service, err error) {
   if isV2(data) {
     services, err = parseProcfileV2(data)
   } else {
@@ -26,6 +30,6 @@ func ReadProcfile(path string) (services []systemd.Service, err error) {
 }
 
 func isV2(data []byte) bool {
-  re := regexp.MustCompile(`(?m)^version:\s*2\s*$`)
+  re := regexp.MustCompile(`(?m)^\s*version:\s*2\s*$`)
   return re.Find(data) != nil
 }
