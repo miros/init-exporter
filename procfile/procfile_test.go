@@ -3,7 +3,7 @@ package procfile
 import (
   "testing"
   "github.com/stretchr/testify/assert"
-  "systemd-exporter/systemd"
+  "github.com/miros/systemd-exporter/systemd"
 )
 
 func TestProcfileV1(t *testing.T) {

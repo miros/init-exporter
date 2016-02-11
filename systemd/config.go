@@ -2,7 +2,7 @@ package systemd
 
 import (
   "path"
-  "systemd-exporter/systemd/validation"
+  "github.com/miros/systemd-exporter/systemd/validation"
 )
 
 type Config struct {

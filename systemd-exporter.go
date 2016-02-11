@@ -3,8 +3,8 @@ package main
 import (
   "os"
   "github.com/codegangsta/cli"
-  "systemd-exporter/systemd"
-  "systemd-exporter/procfile"
+  "github.com/miros/systemd-exporter/systemd"
+  "github.com/miros/systemd-exporter/procfile"
   "fmt"
 )
 

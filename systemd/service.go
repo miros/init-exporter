@@ -1,7 +1,7 @@
 package systemd
 
 import (
-  "systemd-exporter/systemd/validation"
+  "github.com/miros/systemd-exporter/systemd/validation"
 )
 
 type Respawn struct {

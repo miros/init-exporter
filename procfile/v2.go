@@ -1,7 +1,7 @@
 package procfile
 
 import (
-  "systemd-exporter/systemd"
+  "github.com/miros/systemd-exporter/systemd"
   "errors"
   "fmt"
   "github.com/imdario/mergo"

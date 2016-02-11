@@ -3,7 +3,7 @@ package procfile
 import (
   "io/ioutil"
   "regexp"
-  "systemd-exporter/systemd"
+  "github.com/miros/systemd-exporter/systemd"
 )
 
 import "github.com/davecgh/go-spew/spew"
