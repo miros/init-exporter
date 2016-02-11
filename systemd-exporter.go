@@ -30,6 +30,7 @@ func prettyPrintPanics() {
 
   if r := recover(); r != nil {
     fmt.Fprintf(os.Stderr, "Error: %v\n", r)
+    os.Exit(1)
   }
 }
 
