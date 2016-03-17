@@ -20,7 +20,7 @@ func defaultConfig() GlobalConfig {
 		RunUser:          "service",
 		RunGroup:         "service",
 		WorkingDirectory: "/tmp",
-		HelperDir:        "/var/local/upstart_helpers/",
+		HelperDir:        "/var/local/upstart_helpers",
 		Prefix:           "fb-",
 	}
 }

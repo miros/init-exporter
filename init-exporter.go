@@ -64,6 +64,10 @@ func describeApp(app *cli.App, version string) {
 			Name:  "p, procfile",
 			Usage: "path to procfile",
 		},
+		cli.StringFlag{
+			Name:  "f, format",
+			Usage: "Format of init files (upstart | systemd)",
+		},
 	}
 }
 
@@ -78,13 +82,26 @@ func runAction(cliContext *cli.Context) {
 	globalConfig := ReadGlobalConfig(cliContext.String("config"))
 	appName = globalConfig.Prefix + appName
 
-	provider := newProvider(detectProvider(cliContext))
+	providerName := detectProvider(cliContext.String("format"))
+
+	provider := newProvider(providerName)
 	exporter := newExporter(globalConfig, provider)
 
 	if cliContext.Bool("uninstall") {
 		uninstall(exporter, appName)
 	} else {
 		install(exporter, appName, cliContext.String("procfile"))
+	}
+}
+
+func newProvider(providerName string) exporter.Provider {
+	switch providerName {
+	case SYSTEMD:
+		return systemd.New()
+	case UPSTART:
+		return upstart.New()
+	default:
+		panic("unknown init provider " + providerName)
 	}
 }
 
@@ -104,7 +121,7 @@ func newExporter(config GlobalConfig, provider exporter.Provider) *exporter.Expo
 
 func uninstall(exporter *exporter.Exporter, appName string) {
 	exporter.Uninstall(appName)
-	fmt.Println("systemd service uninstalled")
+	fmt.Println("service uninstalled")
 }
 
 func install(exporter *exporter.Exporter, appName string, pathToProcfile string) {
@@ -114,23 +131,8 @@ func install(exporter *exporter.Exporter, appName string, pathToProcfile string)
 
 	if services, err := procfile.ReadProcfile(pathToProcfile); err == nil {
 		exporter.Install(appName, services)
-		fmt.Println("systemd service installed to", exporter.Config.TargetDir)
+		fmt.Println("service installed to", exporter.Config.TargetDir)
 	} else {
 		panic(err)
 	}
-}
-
-func newProvider(providerName string) exporter.Provider {
-	switch providerName {
-	case SYSTEMD:
-		return systemd.New()
-	case UPSTART:
-		return upstart.New()
-	default:
-		panic("unknown init provider")
-	}
-}
-
-func detectProvider(cliContext *cli.Context) string {
-	return UPSTART
 }
