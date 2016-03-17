@@ -1,26 +1,23 @@
 package systemd
 
 import (
-  "os/exec"
-  "github.com/spf13/afero"
+	"github.com/miros/init-exporter/utils"
 )
 
-type systemExecutor func(name string, arg ...string) error
-
 type Systemd struct {
-  Config Config
-  fs afero.Fs
-  execSystemCommand systemExecutor
+	execSystemCommand utils.SystemExecutor
 }
 
-func New(config Config) *Systemd {
-  return &Systemd{
-    Config: config,
-    fs: afero.NewOsFs(),
-    execSystemCommand: execSystemCommand,
-  }
+func New() *Systemd {
+	return &Systemd{
+		execSystemCommand: utils.ExecSystemCommand,
+	}
 }
 
-func execSystemCommand(name string, arg ...string) error {
-  return exec.Command(name, arg...).Run();
+func (self *Systemd) UnitName(name string) string {
+	return name + ".service"
+}
+
+func (self *Systemd) DefaultTargetDir() string {
+	return "/etc/systemd/system/"
 }

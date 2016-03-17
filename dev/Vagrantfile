@@ -2,12 +2,12 @@
 # vi: set ft=ruby :
 
 Vagrant.configure(2) do |config|
-  config.vm.define "systemd-exporter-sandbox"
+  config.vm.define "init-exporter-sandbox"
 
   config.vm.box = "bento/centos-7.2"
   config.vbguest.auto_update = true
 
-  config.vm.synced_folder "..", "/home/vagrant/src/systemd-exporter"
+  config.vm.synced_folder "..", "/home/vagrant/src/init-exporter"
 
   config.vm.provision "shell", inline: <<-SHELL
     echo "nameserver 8.8.8.8" >> /etc/resolv.conf

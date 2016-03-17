@@ -1,2 +1,2 @@
-EXE_TARGET=dev/target/systemd-exporter
+EXE_TARGET=dev/target/init-exporter
 go build -o $EXE_TARGET

@@ -1,9 +1,9 @@
 package systemd
 
 import (
-  "text/template"
-  "bytes"
-  "strings"
+	"github.com/miros/init-exporter/exporter"
+	"github.com/miros/init-exporter/procfile"
+	"strings"
 )
 
 const helperTemplate = `#!/bin/bash
@@ -11,11 +11,11 @@ const helperTemplate = `#!/bin/bash
 exec {{.cmd}}
 `
 
-func RenderHelperTemplate(cmd string) string {
-  data := make(map[string]interface{})
-  data["cmd"] = cmd
+func (sys *Systemd) RenderHelperTemplate(service procfile.Service) string {
+	data := make(map[string]interface{})
+	data["cmd"] = service.Cmd
 
-  return renderTemplate("helper", data)
+	return exporter.RenderTemplate("helper", helperTemplate, data)
 }
 
 const appTemplate = `[Unit]
@@ -38,22 +38,24 @@ ExecStop=/bin/echo "{{.app_name}} stoped"
 [Install]
 WantedBy=multi-user.target
 `
-func RenderAppTemplate(appName string, config Config, services []Service) string {
-  data := make(map[string]interface{})
-  data["app_name"] = appName
-  data["user"] = config.User
-  data["group"] = config.Group
-  data["wants"] = renderWantsClause(appName, services)
 
-  return renderTemplate("app", data)
+func (sys *Systemd) RenderAppTemplate(appName string, config exporter.Config, services []procfile.Service) string {
+	data := make(map[string]interface{})
+
+	data["app_name"] = appName
+	data["user"] = config.User
+	data["group"] = config.Group
+	data["wants"] = renderWantsClause(appName, services)
+
+	return exporter.RenderTemplate("app", appTemplate, data)
 }
 
-func renderWantsClause(appName string, services []Service) string {
-  names := make([]string, 0, len(services))
-  for _, service := range(services) {
-    names = append(names, service.fullName(appName) + ".service")
-  }
-  return strings.Join(names, " ")
+func renderWantsClause(appName string, services []procfile.Service) string {
+	names := make([]string, 0, len(services))
+	for _, service := range services {
+		names = append(names, service.FullName(appName)+".service")
+	}
+	return strings.Join(names, " ")
 }
 
 const serviceTemplate = `[Unit]
@@ -80,52 +82,20 @@ Environment={{.env}}
 ExecStart=/bin/sh {{.helper_path}} >> {{.log_path}} 2>&1
 `
 
-func RenderServiceTemplate(appName string, service Service) string {
-  data := make(map[string]interface{})
-  data["app_name"] = appName
-  data["cmd_name"] = service.Name
-  data["kill_timeout"] = service.Options.KillTimeout
-  data["respawn_interval"] = service.Options.Respawn.Interval
-  data["respawn_count"] = service.Options.Respawn.Count
-  data["user"] = service.Options.User
-  data["group"] = service.Options.Group
-  data["helper_path"] = service.helperPath
-  data["working_directory"] = service.Options.WorkingDirectory
-  data["log_path"] = service.Options.LogPath
-  data["env"] = renderEnvClause(service.Options.Env)
+func (sys *Systemd) RenderServiceTemplate(appName string, service procfile.Service) string {
+	data := make(map[string]interface{})
 
-  return renderTemplate("service", data)
-}
+	data["app_name"] = appName
+	data["cmd_name"] = service.Name
+	data["kill_timeout"] = service.Options.KillTimeout
+	data["respawn_interval"] = service.Options.Respawn.Interval
+	data["respawn_count"] = service.Options.Respawn.Count
+	data["user"] = service.Options.User
+	data["group"] = service.Options.Group
+	data["helper_path"] = service.HelperPath
+	data["working_directory"] = service.Options.WorkingDirectory
+	data["log_path"] = service.Options.LogPath
+	data["env"] = exporter.RenderEnvClause(service.Options.Env)
 
-func renderEnvClause(env map[string]string) string {
-  clauses := make([]string, 0, len(env))
-  for name, value := range(env) {
-    clauses = append(clauses, name + "=" + value)
-  }
-  return strings.Join(clauses, " ")
-}
-
-func renderTemplate(Name string, data map[string]interface{}) string {
-  var templates = map[string]string{
-    "helper": helperTemplate,
-    "app": appTemplate,
-    "service": serviceTemplate,
-  }
-
-  tmpl, err := template.New(Name).Parse(templates[Name])
-  if err != nil {
-    panic(err)
-  }
-  return renderTemplateToString(tmpl, data)
-}
-
-func renderTemplateToString(template *template.Template, data interface{}) string {
-  buffer := new(bytes.Buffer)
-
-  err := template.Execute(buffer, data)
-  if err != nil {
-    panic(err)
-  }
-
-  return buffer.String()
+	return exporter.RenderTemplate("service", serviceTemplate, data)
 }
