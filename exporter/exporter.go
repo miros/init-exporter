@@ -7,14 +7,14 @@ import (
 
 type Exporter struct {
 	Config   Config
-	fs       afero.Fs
+	Fs       afero.Fs
 	provider Provider
 }
 
 func New(config Config, provider Provider) *Exporter {
 	return &Exporter{
 		Config:   config,
-		fs:       afero.NewOsFs(),
+		Fs:       afero.NewOsFs(),
 		provider: provider,
 	}
 }

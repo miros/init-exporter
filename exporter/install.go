@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/imdario/mergo"
 	"github.com/miros/init-exporter/procfile"
+	"github.com/miros/init-exporter/utils"
 	"github.com/miros/init-exporter/utils/validation"
-	"github.com/spf13/afero"
 )
 
 func (self *Exporter) Install(appName string, services []procfile.Service) {
@@ -23,7 +23,7 @@ func (self *Exporter) doInstall(appName string, services []procfile.Service) {
 }
 
 func (self *Exporter) writeServices(appName string, services []procfile.Service) {
-	error := self.fs.MkdirAll(self.Config.HelperDir, 0755)
+	error := self.Fs.MkdirAll(self.Config.HelperDir, 0755)
 	if error != nil {
 		panic(error)
 	}
@@ -36,7 +36,7 @@ func (self *Exporter) writeServices(appName string, services []procfile.Service)
 func (self *Exporter) writeAppUnit(appName string, services []procfile.Service) {
 	path := self.UnitPath(appName)
 	data := self.provider.RenderAppTemplate(appName, self.Config, services)
-	writeFile(self.fs, path, data)
+	utils.MustWriteFile(self.Fs, path, data)
 }
 
 func (self *Exporter) writeServiceUnit(appName string, service procfile.Service) {
@@ -44,17 +44,10 @@ func (self *Exporter) writeServiceUnit(appName string, service procfile.Service)
 
 	service.HelperPath = self.Config.HelperPath(fullServiceName)
 	helperData := self.provider.RenderHelperTemplate(service)
-	writeFile(self.fs, service.HelperPath, helperData)
+	utils.MustWriteFile(self.Fs, service.HelperPath, helperData)
 
 	unitPath := self.UnitPath(fullServiceName)
-	writeFile(self.fs, unitPath, self.provider.RenderServiceTemplate(appName, service))
-}
-
-func writeFile(fs afero.Fs, path string, data string) {
-	error := afero.WriteFile(fs, path, []byte(data), 0644)
-	if error != nil {
-		panic(error)
-	}
+	utils.MustWriteFile(self.Fs, unitPath, self.provider.RenderServiceTemplate(appName, service))
 }
 
 func handleServiceCounts(services []procfile.Service) []procfile.Service {

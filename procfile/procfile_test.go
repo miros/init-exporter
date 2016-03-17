@@ -1,7 +1,6 @@
 package procfile
 
 import (
-	"github.com/miros/init-exporter/systemd"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -14,9 +13,9 @@ func TestProcfileV1(t *testing.T) {
   `
 	services, _ := parseProcfile([]byte(data))
 
-	assert.Equal(t, []systemd.Service{
-		systemd.Service{Name: "cmd1", Cmd: "run-cmd1"},
-		systemd.Service{Name: "cmd2", Cmd: "run-cmd2"},
+	assert.Equal(t, []Service{
+		Service{Name: "cmd1", Cmd: "run-cmd1"},
+		Service{Name: "cmd2", Cmd: "run-cmd2"},
 	}, services)
 }
 
@@ -44,21 +43,21 @@ func TestProcfileV2(t *testing.T) {
   `
 	services, _ := parseProcfile([]byte(data))
 
-	assert.Contains(t, services, systemd.Service{
+	assert.Contains(t, services, Service{
 		Name: "cmd2",
 		Cmd:  "run-cmd2",
-		Options: systemd.ServiceOptions{
+		Options: ServiceOptions{
 			WorkingDirectory: "/working-dir2",
 			Env:              map[string]string{"env1": "env1-val-redefined", "env2": "env2-val"},
 		},
 	})
 
-	assert.Contains(t, services, systemd.Service{
+	assert.Contains(t, services, Service{
 		Name: "cmd1",
 		Cmd:  "run-cmd1",
-		Options: systemd.ServiceOptions{
+		Options: ServiceOptions{
 			KillTimeout: 60,
-			Respawn: systemd.Respawn{
+			Respawn: Respawn{
 				Count:    5,
 				Interval: 10,
 			},

@@ -22,8 +22,8 @@ func (self *Exporter) uninstallHelpers(appName string) {
 }
 
 func (self *Exporter) deleteByMask(path, pattern string) {
-	for _, path := range globFiles(self.fs, path, pattern) {
-		err := self.fs.Remove(path)
+	for _, path := range globFiles(self.Fs, path, pattern) {
+		err := self.Fs.Remove(path)
 
 		if err != nil {
 			panic(err)
