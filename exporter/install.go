@@ -87,7 +87,7 @@ func setServiceDefaults(appName string, app procfile.App, config Config) {
 func validateParams(appName string, config Config, app procfile.App) {
 	validateAppName(appName)
 	validateConfig(config)
-	validateServices(app.Services)
+	validateApp(app)
 }
 
 func validateAppName(appName string) {
@@ -100,8 +100,6 @@ func validateConfig(config Config) {
 	validation.MustBeValid(&config)
 }
 
-func validateServices(services []procfile.Service) {
-	for _, service := range services {
-		validation.MustBeValid(&service)
-	}
+func validateApp(app procfile.App) {
+	validation.MustBeValid(app)
 }
