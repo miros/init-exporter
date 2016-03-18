@@ -39,13 +39,13 @@ ExecStop=/bin/echo "{{.app_name}} stoped"
 WantedBy=multi-user.target
 `
 
-func (sys *Systemd) RenderAppTemplate(appName string, config exporter.Config, services []procfile.Service) string {
+func (sys *Systemd) RenderAppTemplate(appName string, config exporter.Config, app procfile.App) string {
 	data := make(map[string]interface{})
 
 	data["app_name"] = appName
 	data["user"] = config.User
 	data["group"] = config.Group
-	data["wants"] = renderWantsClause(appName, services)
+	data["wants"] = renderWantsClause(appName, app.Services)
 
 	return exporter.RenderTemplate("app", appTemplate, data)
 }

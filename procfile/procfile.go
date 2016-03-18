@@ -9,7 +9,7 @@ import "github.com/davecgh/go-spew/spew"
 
 var _ = spew.Dump
 
-func ReadProcfile(path string) (services []Service, err error) {
+func ReadProcfile(path string) (app App, err error) {
 	data, err := ioutil.ReadFile(path)
 
 	if err != nil {
@@ -19,11 +19,11 @@ func ReadProcfile(path string) (services []Service, err error) {
 	return parseProcfile(data)
 }
 
-func parseProcfile(data []byte) (services []Service, err error) {
+func parseProcfile(data []byte) (app App, err error) {
 	if isV2(data) {
-		services, err = parseProcfileV2(data)
+		app, err = parseProcfileV2(data)
 	} else {
-		services, err = parseProcfileV1(data)
+		app.Services, err = parseProcfileV1(data)
 	}
 
 	return

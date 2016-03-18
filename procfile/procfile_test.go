@@ -11,12 +11,12 @@ func TestProcfileV1(t *testing.T) {
     # comment
     cmd2: run-cmd2
   `
-	services, _ := parseProcfile([]byte(data))
+	app, _ := parseProcfile([]byte(data))
 
 	assert.Equal(t, []Service{
 		Service{Name: "cmd1", Cmd: "run-cmd1"},
 		Service{Name: "cmd2", Cmd: "run-cmd2"},
-	}, services)
+	}, app.Services)
 }
 
 func TestProcfileV2(t *testing.T) {
@@ -41,9 +41,9 @@ func TestProcfileV2(t *testing.T) {
           env1: env1-val-redefined
           env2: env2-val
   `
-	services, _ := parseProcfile([]byte(data))
+	app, _ := parseProcfile([]byte(data))
 
-	assert.Contains(t, services, Service{
+	assert.Contains(t, app.Services, Service{
 		Name: "cmd2",
 		Cmd:  "run-cmd2",
 		Options: ServiceOptions{
@@ -52,7 +52,7 @@ func TestProcfileV2(t *testing.T) {
 		},
 	})
 
-	assert.Contains(t, services, Service{
+	assert.Contains(t, app.Services, Service{
 		Name: "cmd1",
 		Cmd:  "run-cmd1",
 		Options: ServiceOptions{

@@ -46,7 +46,7 @@ func TestInstall(t *testing.T) {
 	env := test_env.New()
 	sys := newExporter(env, systemdConfig)
 
-	sys.Install("some-app", []procfile.Service{defaultService})
+	sys.Install("some-app", procfile.App{Services: []procfile.Service{defaultService}})
 
 	assert.True(t, env.FileExists(appUnitFilePath), "no app unit file")
 

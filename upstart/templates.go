@@ -3,6 +3,7 @@ package upstart
 import (
 	"github.com/miros/init-exporter/exporter"
 	"github.com/miros/init-exporter/procfile"
+	"github.com/miros/init-exporter/utils"
 )
 
 const helperTemplate = `#!/bin/bash
@@ -21,8 +22,8 @@ func (self *Upstart) RenderHelperTemplate(service procfile.Service) string {
 }
 
 const appTemplate = `
-start on {{.start_on}}
-stop on {{.stop_on}}
+start on {{.start_level}}
+stop on {{.stop_level}}
 
 pre-start script
 
@@ -36,21 +37,21 @@ EOF
 end script
 `
 
-func (self *Upstart) RenderAppTemplate(appName string, config exporter.Config, services []procfile.Service) string {
+func (self *Upstart) RenderAppTemplate(appName string, config exporter.Config, app procfile.App) string {
 	data := make(map[string]interface{})
 
 	data["app_name"] = appName
 	data["user"] = config.User
 	data["group"] = config.Group
-	data["start_on"] = "[3]"
-	data["stop_on"] = "[3]"
+	data["start_level"] = withDefaultLevel(app.StartLevel)
+	data["stop_level"] = withDefaultLevel(app.StopLevel)
 
 	return exporter.RenderTemplate("app", appTemplate, data)
 }
 
 const serviceTemplate = `
-start on {{.start_on}}
-stop on {{.stop_on}}
+start on {{.start_level}}
+stop on {{.stop_level}}
 respawn
 respawn limit {{.respawn_count}} {{.respawn_interval}}
 kill timeout {{.kill_timeout}}
@@ -77,8 +78,12 @@ func (self *Upstart) RenderServiceTemplate(appName string, service procfile.Serv
 	data["helper_path"] = service.HelperPath
 	data["working_directory"] = service.Options.WorkingDirectory
 	data["log_path"] = service.Options.LogPath
-	data["start_on"] = "[3]"
-	data["stop_on"] = "[3]"
+	data["start_level"] = withDefaultLevel(service.Options.StartLevel)
+	data["stop_level"] = withDefaultLevel(service.Options.StopLevel)
 
 	return exporter.RenderTemplate("service", serviceTemplate, data)
+}
+
+func withDefaultLevel(runlevel string) string {
+	return utils.TakeFirstDefined(runlevel, "[3]")
 }

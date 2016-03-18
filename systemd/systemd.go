@@ -17,7 +17,3 @@ func New() *Systemd {
 func (self *Systemd) UnitName(name string) string {
 	return name + ".service"
 }
-
-func (self *Systemd) DefaultTargetDir() string {
-	return "/etc/systemd/system/"
-}

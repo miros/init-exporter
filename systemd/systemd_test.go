@@ -48,7 +48,7 @@ func TestInstall(t *testing.T) {
 	env := test_env.New()
 	sys := newExporter(env, systemdConfig)
 
-	sys.Install("some-app", []procfile.Service{defaultService})
+	sys.Install("some-app", procfile.App{Services: []procfile.Service{defaultService}})
 
 	assert.True(t, env.FileExists(appUnitFilePath), "no app unit file")
 
@@ -79,7 +79,7 @@ func TestInstallMultiCount(t *testing.T) {
 	multiService := defaultService
 	multiService.Options.Count = 2
 
-	sys.Install("some-app", []procfile.Service{multiService})
+	sys.Install("some-app", procfile.App{Services: []procfile.Service{multiService}})
 
 	assert.True(t, env.FileExists("/units/some-app_some-service1.service"), "no service unit file")
 	assert.True(t, env.FileExists("/units/some-app_some-service2.service"), "no service unit file")
@@ -89,7 +89,7 @@ func TestUnInstall(t *testing.T) {
 	env := test_env.New()
 	sys := newExporter(env, systemdConfig)
 
-	sys.Install("some-app", []procfile.Service{defaultService})
+	sys.Install("some-app", procfile.App{Services: []procfile.Service{defaultService}})
 
 	env.WriteFile("/helpers/file_to_keep.sh", "data")
 	env.WriteFile("/units/file_to_keep.service", "data")

@@ -7,7 +7,6 @@ import (
 	"github.com/miros/init-exporter/procfile"
 	"github.com/miros/init-exporter/systemd"
 	"github.com/miros/init-exporter/upstart"
-	"github.com/miros/init-exporter/utils"
 	"os"
 )
 
@@ -83,15 +82,26 @@ func runAction(cliContext *cli.Context) {
 	appName = globalConfig.Prefix + appName
 
 	providerName := detectProvider(cliContext.String("format"))
-
-	provider := newProvider(providerName)
-	exporter := newExporter(globalConfig, provider)
+	exporter := newExporter(globalConfig, providerName)
 
 	if cliContext.Bool("uninstall") {
 		uninstall(exporter, appName)
 	} else {
 		install(exporter, appName, cliContext.String("procfile"))
 	}
+}
+
+func newExporter(config GlobalConfig, providerName string) *exporter.Exporter {
+	exporterConfig := exporter.Config{
+		HelperDir: config.HelperDir,
+		TargetDir: config.TargetDirFor(providerName),
+		User:      config.RunUser,
+		Group:     config.RunGroup,
+		DefaultWorkingDirectory: config.WorkingDirectory,
+	}
+
+	provider := newProvider(providerName)
+	return exporter.New(exporterConfig, provider)
 }
 
 func newProvider(providerName string) exporter.Provider {
@@ -105,20 +115,6 @@ func newProvider(providerName string) exporter.Provider {
 	}
 }
 
-func newExporter(config GlobalConfig, provider exporter.Provider) *exporter.Exporter {
-	exporterConfig := exporter.Config{
-		HelperDir: config.HelperDir,
-		TargetDir: utils.TakeFirstDefined(config.TargetDir, provider.DefaultTargetDir()),
-		User:      config.RunUser,
-		Group:     config.RunGroup,
-		DefaultWorkingDirectory: config.WorkingDirectory,
-	}
-
-	spew.Dump(config)
-
-	return exporter.New(exporterConfig, provider)
-}
-
 func uninstall(exporter *exporter.Exporter, appName string) {
 	exporter.Uninstall(appName)
 	fmt.Println("service uninstalled")
@@ -129,8 +125,8 @@ func install(exporter *exporter.Exporter, appName string, pathToProcfile string)
 		panic("No procfile given")
 	}
 
-	if services, err := procfile.ReadProcfile(pathToProcfile); err == nil {
-		exporter.Install(appName, services)
+	if app, err := procfile.ReadProcfile(pathToProcfile); err == nil {
+		exporter.Install(appName, app)
 		fmt.Println("service installed to", exporter.Config.TargetDir)
 	} else {
 		panic(err)

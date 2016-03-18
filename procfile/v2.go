@@ -7,7 +7,7 @@ import (
 	"github.com/smallfish/simpleyaml"
 )
 
-func parseProcfileV2(data []byte) (services []Service, err error) {
+func parseProcfileV2(data []byte) (app App, err error) {
 	yaml, err := simpleyaml.NewYaml(data)
 	if err != nil {
 		return
@@ -19,9 +19,11 @@ func parseProcfileV2(data []byte) (services []Service, err error) {
 		return
 	}
 
-	services = parseCommands(yaml, commands)
+	app.Services = parseCommands(yaml, commands)
+	app.StartLevel, _ = yaml.Get("start_on_runlevel").String()
+	app.StopLevel, _ = yaml.Get("stop_on_runlevel").String()
 
-	return services, nil
+	return app, nil
 }
 
 func parseCommands(yaml *simpleyaml.Yaml, commands map[interface{}]interface{}) []Service {

@@ -8,17 +8,17 @@ import (
 	"github.com/miros/init-exporter/utils/validation"
 )
 
-func (self *Exporter) Install(appName string, services []procfile.Service) {
-	services = handleServiceCounts(services)
-	setServiceDefaults(appName, services, self.Config)
-	validateParams(appName, self.Config, services)
+func (self *Exporter) Install(appName string, app procfile.App) {
+	app.Services = handleServiceCounts(app.Services)
+	setServiceDefaults(appName, app, self.Config)
+	validateParams(appName, self.Config, app)
 
-	self.doInstall(appName, services)
+	self.doInstall(appName, app)
 }
 
-func (self *Exporter) doInstall(appName string, services []procfile.Service) {
-	self.writeServices(appName, services)
-	self.writeAppUnit(appName, services)
+func (self *Exporter) doInstall(appName string, app procfile.App) {
+	self.writeServices(appName, app.Services)
+	self.writeAppUnit(appName, app)
 	self.provider.MustEnableService(appName)
 }
 
@@ -33,9 +33,9 @@ func (self *Exporter) writeServices(appName string, services []procfile.Service)
 	}
 }
 
-func (self *Exporter) writeAppUnit(appName string, services []procfile.Service) {
+func (self *Exporter) writeAppUnit(appName string, app procfile.App) {
 	path := self.UnitPath(appName)
-	data := self.provider.RenderAppTemplate(appName, self.Config, services)
+	data := self.provider.RenderAppTemplate(appName, self.Config, app)
 	utils.MustWriteFile(self.Fs, path, data)
 }
 
@@ -68,24 +68,26 @@ func handleServiceCounts(services []procfile.Service) []procfile.Service {
 	return newServices
 }
 
-func setServiceDefaults(appName string, services []procfile.Service, config Config) {
-	for i, _ := range services {
-		service := &services[i]
+func setServiceDefaults(appName string, app procfile.App, config Config) {
+	for i, _ := range app.Services {
+		service := &app.Services[i]
 
 		defaults := procfile.ServiceOptions{
 			User:             config.User,
 			Group:            config.Group,
 			WorkingDirectory: config.DefaultWorkingDirectory,
 			LogPath:          fmt.Sprintf("/var/log/%s/%s.log", appName, service.Name),
+			StartLevel:       app.StartLevel,
+			StopLevel:        app.StopLevel,
 		}
 		mergo.Merge(&service.Options, defaults)
 	}
 }
 
-func validateParams(appName string, config Config, services []procfile.Service) {
+func validateParams(appName string, config Config, app procfile.App) {
 	validateAppName(appName)
 	validateConfig(config)
-	validateServices(services)
+	validateServices(app.Services)
 }
 
 func validateAppName(appName string) {

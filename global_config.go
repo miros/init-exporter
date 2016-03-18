@@ -12,6 +12,8 @@ type GlobalConfig struct {
 	WorkingDirectory string `yaml:"working_directory"`
 	HelperDir        string `yaml:"helper_dir"`
 	TargetDir        string `yaml:"target_dir"`
+	UpstartDir       string `yaml:"upstart_dir"`
+	SystemdDir       string `yaml:"systemd_dir"`
 	Prefix           string
 }
 
@@ -22,6 +24,23 @@ func defaultConfig() GlobalConfig {
 		WorkingDirectory: "/tmp",
 		HelperDir:        "/var/local/upstart_helpers",
 		Prefix:           "fb-",
+		SystemdDir:       "/etc/systemd/system/",
+		UpstartDir:       "/etc/init/",
+	}
+}
+
+func (self *GlobalConfig) TargetDirFor(providerName string) string {
+	if self.TargetDir != "" {
+		return self.TargetDir
+	}
+
+	switch providerName {
+	case SYSTEMD:
+		return self.SystemdDir
+	case UPSTART:
+		return self.UpstartDir
+	default:
+		panic("unknown init provider " + providerName)
 	}
 }
 

@@ -18,6 +18,8 @@ type ServiceOptions struct {
 	Respawn          Respawn
 	LogPath          string
 	Count            int
+	StartLevel       string
+	StopLevel        string
 }
 
 func (options *ServiceOptions) Validate() error {
