@@ -3,63 +3,14 @@ package systemd
 import (
 	"github.com/miros/init-exporter/exporter"
 	"github.com/miros/init-exporter/procfile"
-	"github.com/miros/init-exporter/utils"
-	"github.com/spf13/afero"
+	"github.com/miros/init-exporter/utils/test_env"
 	"github.com/stretchr/testify/assert"
-	"strings"
 	"testing"
 )
 
 import "github.com/davecgh/go-spew/spew"
 
 var _ = spew.Dump
-
-type testEnv struct {
-	executedCommands []string
-	fs               afero.Fs
-}
-
-func newTestEnv() *testEnv {
-	env := new(testEnv)
-	env.fs = afero.NewMemMapFs()
-	return env
-}
-
-func (env *testEnv) fakeExecSystemCommand() utils.SystemExecutor {
-	return func(name string, args ...string) error {
-		env.executedCommands = append(env.executedCommands, name+" "+strings.Join(args, " "))
-		return nil
-	}
-}
-
-func (env *testEnv) readFile(path string) string {
-	data, err := afero.ReadFile(env.fs, path)
-
-	if err != nil {
-		panic(err)
-	}
-
-	return string(data)
-}
-
-func (env *testEnv) fileExists(path string) bool {
-	result, _ := afero.Exists(env.fs, path)
-	return result
-}
-
-func (env *testEnv) writeFile(path string, data string) {
-	utils.MustWriteFile(env.fs, path, data)
-}
-
-func (env *testEnv) newExporter(config exporter.Config) *exporter.Exporter {
-	provider := New()
-	provider.execSystemCommand = env.fakeExecSystemCommand()
-
-	sys := exporter.New(config, provider)
-	sys.Fs = env.fs
-
-	return sys
-}
 
 var systemdConfig exporter.Config = exporter.Config{
 	HelperDir: "/helpers",
@@ -86,20 +37,27 @@ const appUnitFilePath = "/units/some-app.service"
 const helperFilePath = "/helpers/some-app_some-service.sh"
 const serviceUnitFilePath = "/units/some-app_some-service.service"
 
+func newExporter(env *test_env.TestEnv, config exporter.Config) *exporter.Exporter {
+	provider := New()
+	provider.execSystemCommand = env.FakeExecSystemCommand()
+
+	return env.NewExporter(config, provider)
+}
+
 func TestInstall(t *testing.T) {
-	env := newTestEnv()
-	sys := env.newExporter(systemdConfig)
+	env := test_env.New()
+	sys := newExporter(env, systemdConfig)
 
 	sys.Install("some-app", []procfile.Service{defaultService})
 
-	assert.True(t, env.fileExists(appUnitFilePath), "no app unit file")
+	assert.True(t, env.FileExists(appUnitFilePath), "no app unit file")
 
-	assert.True(t, env.fileExists(helperFilePath), "no helper file")
-	helperFileData := env.readFile(helperFilePath)
+	assert.True(t, env.FileExists(helperFilePath), "no helper file")
+	helperFileData := env.ReadFile(helperFilePath)
 	assert.Contains(t, helperFileData, "run-some-service")
 
-	assert.True(t, env.fileExists(serviceUnitFilePath), "no service unit file")
-	unitFileData := env.readFile(serviceUnitFilePath)
+	assert.True(t, env.FileExists(serviceUnitFilePath), "no service unit file")
+	unitFileData := env.ReadFile(serviceUnitFilePath)
 	assert.Contains(t, unitFileData, "PartOf=some-app.service")
 	assert.Contains(t, unitFileData, "TimeoutStopSec=12345")
 	assert.Contains(t, unitFileData, "StartLimitInterval=10")
@@ -107,44 +65,43 @@ func TestInstall(t *testing.T) {
 	assert.Contains(t, unitFileData, "WorkingDirectory=/projects/some-service")
 	assert.Contains(t, unitFileData, "User=run_user")
 	assert.Contains(t, unitFileData, "Group=run_group")
-	assert.Contains(t, unitFileData, "WorkingDirectory=/projects/some-service")
 	assert.Contains(t, unitFileData, "env_var=env_val")
 	assert.Contains(t, unitFileData, "env_var2=env_val2")
 	assert.Contains(t, unitFileData, ">> /var/log/some-app/some-service.log")
 
-	assert.Contains(t, env.executedCommands, "systemctl enable some-app.service")
+	assert.Contains(t, env.ExecutedCommands, "systemctl enable some-app.service")
 }
 
 func TestInstallMultiCount(t *testing.T) {
-	env := newTestEnv()
-	sys := env.newExporter(systemdConfig)
+	env := test_env.New()
+	sys := newExporter(env, systemdConfig)
 
 	multiService := defaultService
 	multiService.Options.Count = 2
 
 	sys.Install("some-app", []procfile.Service{multiService})
 
-	assert.True(t, env.fileExists("/units/some-app_some-service1.service"), "no service unit file")
-	assert.True(t, env.fileExists("/units/some-app_some-service2.service"), "no service unit file")
+	assert.True(t, env.FileExists("/units/some-app_some-service1.service"), "no service unit file")
+	assert.True(t, env.FileExists("/units/some-app_some-service2.service"), "no service unit file")
 }
 
 func TestUnInstall(t *testing.T) {
-	env := newTestEnv()
-	sys := env.newExporter(systemdConfig)
+	env := test_env.New()
+	sys := newExporter(env, systemdConfig)
 
 	sys.Install("some-app", []procfile.Service{defaultService})
 
-	env.writeFile("/helpers/file_to_keep.sh", "data")
-	env.writeFile("/units/file_to_keep.service", "data")
+	env.WriteFile("/helpers/file_to_keep.sh", "data")
+	env.WriteFile("/units/file_to_keep.service", "data")
 
 	sys.Uninstall("some-app")
 
-	assert.False(t, env.fileExists(appUnitFilePath), "app unit file exists")
-	assert.False(t, env.fileExists(helperFilePath), "helper file exists")
-	assert.False(t, env.fileExists(serviceUnitFilePath), "service unit file exists")
+	assert.False(t, env.FileExists(appUnitFilePath), "app unit file exists")
+	assert.False(t, env.FileExists(helperFilePath), "helper file exists")
+	assert.False(t, env.FileExists(serviceUnitFilePath), "service unit file exists")
 
-	assert.True(t, env.fileExists("/helpers/file_to_keep.sh"), "wrong file deleted")
-	assert.True(t, env.fileExists("/units/file_to_keep.service"), "wrong file deleted")
+	assert.True(t, env.FileExists("/helpers/file_to_keep.sh"), "wrong file deleted")
+	assert.True(t, env.FileExists("/units/file_to_keep.service"), "wrong file deleted")
 
-	assert.Contains(t, env.executedCommands, "systemctl disable some-app.service")
+	assert.Contains(t, env.ExecutedCommands, "systemctl disable some-app.service")
 }
