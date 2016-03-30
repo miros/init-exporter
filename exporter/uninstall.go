@@ -1,7 +1,7 @@
 package exporter
 
 import (
-	"github.com/ryanuber/go-glob"
+	"github.com/miros/go-glob"
 	"github.com/spf13/afero"
 	"path"
 )

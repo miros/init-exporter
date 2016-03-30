@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/imdario/mergo"
-	"github.com/smallfish/simpleyaml"
+	"github.com/miros/simpleyaml"
 )
 
 func parseProcfileV2(data []byte) (app App, err error) {
