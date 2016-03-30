@@ -1,7 +1,6 @@
 package validation
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 )
@@ -34,7 +33,7 @@ func validateString(val string, reString string) error {
 	}
 
 	if re := regexp.MustCompile(reString); !re.MatchString(val) {
-		return errors.New(fmt.Sprintf("value %s is insecure and can't be accepted", val))
+		return fmt.Errorf("value %s is insecure and can't be accepted", val)
 	}
 
 	return nil
