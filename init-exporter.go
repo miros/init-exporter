@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/codegangsta/cli"
+	"github.com/miros/init-exporter/environment"
 	"github.com/miros/init-exporter/exporter"
 	"github.com/miros/init-exporter/procfile"
 	"github.com/miros/init-exporter/systemd"
@@ -16,9 +17,6 @@ var _ = spew.Dump
 
 const version = "0.0.2"
 const defaultConfigPath = "/etc/init-exporter.yaml"
-
-const SYSTEMD = "systemd"
-const UPSTART = "upstart"
 
 func main() {
 	defer prettyPrintPanics()
@@ -47,7 +45,7 @@ func describeApp(app *cli.App, version string) {
 
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
-			Name:  "n, application_name",
+			Name:  "n, appname",
 			Usage: "Application name (This name only affects the names of generated files)",
 		},
 		cli.BoolFlag{
@@ -71,17 +69,17 @@ func describeApp(app *cli.App, version string) {
 }
 
 func runAction(cliContext *cli.Context) {
-	appName := cliContext.String("application_name")
+	appName := cliContext.String("appname")
 
 	if appName == "" {
 		panic("No application name specified")
 		return
 	}
 
-	globalConfig := ReadGlobalConfig(cliContext.String("config"))
+	globalConfig := environment.ReadGlobalConfig(cliContext.String("config"))
 	appName = globalConfig.Prefix + appName
 
-	providerName := detectProvider(cliContext.String("format"))
+	providerName := environment.DetectProvider(cliContext.String("format"))
 	exporter := newExporter(globalConfig, providerName)
 
 	if cliContext.Bool("uninstall") {
@@ -91,7 +89,7 @@ func runAction(cliContext *cli.Context) {
 	}
 }
 
-func newExporter(config GlobalConfig, providerName string) *exporter.Exporter {
+func newExporter(config environment.GlobalConfig, providerName string) *exporter.Exporter {
 	exporterConfig := exporter.Config{
 		HelperDir: config.HelperDir,
 		TargetDir: config.TargetDirFor(providerName),
@@ -106,9 +104,9 @@ func newExporter(config GlobalConfig, providerName string) *exporter.Exporter {
 
 func newProvider(providerName string) exporter.Provider {
 	switch providerName {
-	case SYSTEMD:
+	case environment.SYSTEMD:
 		return systemd.New()
-	case UPSTART:
+	case environment.UPSTART:
 		return upstart.New()
 	default:
 		panic("unknown init provider " + providerName)

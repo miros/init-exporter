@@ -1,11 +1,14 @@
-package main
+package environment
 
 import (
 	"os"
 	"os/exec"
 )
 
-func detectProvider(providerName string) string {
+const SYSTEMD = "systemd"
+const UPSTART = "upstart"
+
+func DetectProvider(providerName string) string {
 	if providerName != "" {
 		return providerName
 	}
